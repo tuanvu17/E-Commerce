@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 
+//Kiem tra xem Token ng gui len co trong Database server hay khong
 const authMiddleware = asyncHandler(async(req, res, next) =>{
     let token;
     if(req?.headers?.authorization?.startsWith('Bearer')){
@@ -11,7 +12,8 @@ const authMiddleware = asyncHandler(async(req, res, next) =>{
             if(token){
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const user = await User.findById(decoded?.id);
-                req.user = user;
+                
+                req.user = user; // cai nay quan trong
                 next();
             }
         } catch (error) {
@@ -21,6 +23,7 @@ const authMiddleware = asyncHandler(async(req, res, next) =>{
         throw new Error('There is no token attached to header')
     }
 })
+
 const isAdmin = asyncHandler(async(req, res, next) =>{
     const {email} = req.user;
     console.log("🚀 ~ isAdmin ~ req.user:", req.user)
