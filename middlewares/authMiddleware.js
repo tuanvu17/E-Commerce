@@ -26,14 +26,13 @@ const authMiddleware = asyncHandler(async(req, res, next) =>{
 
 const isAdmin = asyncHandler(async(req, res, next) =>{
     const {email} = req.user;
-    console.log("🚀 ~ isAdmin ~ req.user:", req.user)
+    // console.log("🚀 ~ isAdmin ~ req.user:", req.user)
     const adminUser = await User.findOne({email});
     if(adminUser.role !== 'admin'){
         throw new Error('You are not an admin') 
     }else{
         next();// cho phep chạy các middleware tiếp theo
     }
-    
 })
 
 
