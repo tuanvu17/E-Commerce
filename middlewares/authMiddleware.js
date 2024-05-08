@@ -13,7 +13,7 @@ const authMiddleware = asyncHandler(async(req, res, next) =>{
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const user = await User.findById(decoded?.id);
                 
-                req.user = user; // cai nay quan trong
+                req.user = user; // lay user trong database khi check Token, luu vao bien req.user
                 next();
             }
         } catch (error) {
@@ -26,7 +26,6 @@ const authMiddleware = asyncHandler(async(req, res, next) =>{
 
 const isAdmin = asyncHandler(async(req, res, next) =>{
     const {email} = req.user;
-    // console.log("🚀 ~ isAdmin ~ req.user:", req.user)
     const adminUser = await User.findOne({email});
     if(adminUser.role !== 'admin'){
         throw new Error('You are not an admin') 

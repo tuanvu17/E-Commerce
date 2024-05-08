@@ -74,8 +74,6 @@ userSchema.methods.createPasswordResetToken = async function () {
             .digest("hex"); //Tạo ra bản tóm tắt hash của token dưới dạng chuỗi hexa.
       
       this.passwordResetExpries = Date.now() + 30 * 60 * 1000; //2024-04-12T14:06:19.433Z
-      
-      console.log("🚀 ~ this.passwordResetExpries:", this.passwordResetExpries)
       return resetToken;
 }
 //Export the model

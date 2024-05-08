@@ -176,6 +176,7 @@ const blockUser = asyncHandler(async (req, res) => {
             throw new Error(error)
       }
 })
+
 const unblockUser = asyncHandler(async (req, res) => {
       const { id } = req.params;
       validateMongoDbId(id);
@@ -218,7 +219,6 @@ const forgotPasswordToken = asyncHandler(async (req, res) => {
       try {
             const token = await user.createPasswordResetToken();
             await user.save();
-            console.log("🚀 ~ forgotPasswordToken ~ user:", user)
             const resetURL = `Hi, Please follow this link to reset Your Password. This link is valid till 10 minutes from now. <a href='http://localhost:5000/api/user/reset-password/${token}'>Click Here</>`;
             const data = {
                   to: email,
@@ -226,7 +226,7 @@ const forgotPasswordToken = asyncHandler(async (req, res) => {
                   subject: "Forgot Password Link",
                   htm: resetURL,
             };
-            // await sendEmail(data);
+            await sendEmail(data);
             res.json(token);
       } catch (error) {
             throw new Error(error);
