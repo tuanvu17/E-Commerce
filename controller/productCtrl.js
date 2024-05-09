@@ -199,7 +199,7 @@ const rating = asyncHandler(async (req, res) => {
         throw new Error(error);
     }
 });
-
+// upload on clound, get link and Put into itself
 const uploadImages =  asyncHandler(async (req, res) => {
     const {id} = req.params;
     isValidObjectId(id);

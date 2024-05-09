@@ -2,7 +2,7 @@
 // npm run server
 //upload image
 //https://console.cloudinary.com/pm/c-ca8dd36915758d118f8c0521f8cabe/media-explorer/CloudinaryDemo
-
+// Node có ảnh chứa cách sử dụng form-data 
 
 
 
