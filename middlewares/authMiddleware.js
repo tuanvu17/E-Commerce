@@ -12,7 +12,6 @@ const authMiddleware = asyncHandler(async(req, res, next) =>{
             if(token){
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const user = await User.findById(decoded?.id);
-                
                 req.user = user; // lay user trong database khi check Token, luu vao bien req.user
                 next();
             }

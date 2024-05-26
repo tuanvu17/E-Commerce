@@ -17,7 +17,7 @@ router.post("/", authMiddleware, isAdmin, createProduct);
 router.put("/upload/:id",
     authMiddleware,
     isAdmin,
-    uploadPhoto.array('image', 10), // image trùng tên với image trong form-data body của Postman
+    uploadPhoto.array('product', 10), // image/product trùng tên với image/product trong form-data body của Postman
     productImgResize,
     uploadImages
 );

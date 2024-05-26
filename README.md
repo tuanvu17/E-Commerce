@@ -1,9 +1,14 @@
 # E-Commerce
-// npm run server
+// Bước 1: chạy server: npm run server
+// Bước 3: chạy mongoose data: ->> truy cập Nodejs 2022 trên Doccument, chạy dòng lệnh thứ #15
+// Bước 2: chạy Postman, chạy api 
+// Bước 4: Chạy 
 //upload image
 //https://console.cloudinary.com/pm/c-ca8dd36915758d118f8c0521f8cabe/media-explorer/CloudinaryDemo
 // Node có ảnh chứa cách sử dụng form-data 
 
+//--> Bài viết về cách sử dụng sharp để chỉnh sửa ảnh
+//https://blog.logrocket.com/processing-images-sharp-node-js/#setting-up-a-sharp-image-project
 
 
 // Giải thích các thư viện trong Node.js:
@@ -37,3 +42,7 @@
 
 //my cloudinary
 //https://console.cloudinary.com/pm/c-ca8dd36915758d118f8c0521f8cabe/media-explorer/CloudinaryDemo
+
+
+//Model 
+//!mdbgum 

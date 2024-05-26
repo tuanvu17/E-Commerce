@@ -1,17 +1,28 @@
 const { generateToken } = require('../config/jwtToken');
+var uniqid = require('uniqid');
+
 const User = require('../models/userModel');
+const Product = require('../models/productModel');
+const Cart = require('../models/cartModel');
+const Coupon = require('../models/couponModel');
+const Order = require('../models/orderModel'); // cu goi den schema nay la no se hien trong mongoosedb
 const asyncHandler = require("express-async-handler");
 const { validateMongoDbId } = require('../utils/validateMongodbId');
 const { generateRefreshToken } = require('../config/refreshtoken');
 const jwt = require("jsonwebtoken");
 const { json } = require('body-parser');
 const { sendEmail } = require('./emailCtrl');
-const crypto = require("crypto")
+const crypto = require("crypto");
+
 const createUser = asyncHandler(async (req, res) => {
+
+      // get the email from req.body
       const email = req.body.email;
+
+      // with the help of email find the user exists or not 
       const findUser = await User.findOne({ email: email });
       if (!findUser) {
-            //Create User
+            //if user not found Create a new User
             const newUser = await User.create(req.body);
             // Nếu không dùng await thì sẽ không trả về kết quả trong res,bên postman cũng không nhận được kết quả
             res.json(newUser);
@@ -48,6 +59,37 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
             throw new Error("Invalid Cerdentials ");
       }
 })
+
+//login Admin
+
+const loginAdmin = asyncHandler(async (req, res) => {
+      const { email, password } = req.body;
+      //check if user exist or not
+      const findAdmin = await User.findOne({ email });
+      if (findAdmin.role !== 'admin') throw new Error("Not Authorised");
+      if (findAdmin && await findAdmin.isPasswordMatched(password)) {
+            const refreshToken = await generateRefreshToken(findAdmin?.id);
+            const updateuser = await User.findByIdAndUpdate(findAdmin?.id, {
+                  refreshToken: refreshToken
+            }, { new: true });
+            res.cookie("refreshToken", refreshToken, {
+                  httpOnly: true,
+                  maxAge: 72 * 60 * 60 * 1000, //Sau 72 giờ = 3 days, cookie sẽ tự động bị xóa khỏi trình duyệt của người dùng.
+            })
+            res.json({
+                  _id: findAdmin?._id,
+                  firstname: findAdmin?.firstname,
+                  lastname: findAdmin?.lastname,
+                  email: findAdmin?.email,
+                  mobile: findAdmin?.mobile,
+                  token: generateToken(findAdmin?._id)
+            })
+
+      } else {
+            throw new Error("Invalid Cerdentials ");
+      }
+})
+
 //logout
 const logout = asyncHandler(async (req, res) => {
       const cookie = req.cookies;
@@ -112,6 +154,27 @@ const updatedUser = asyncHandler(async (req, res) => {
             throw new Error(error);
       }
 })
+
+// save Address
+
+const saveAddress = asyncHandler(async (req, res) => {
+      const { _id } = req.user;
+      validateMongoDbId(_id);
+
+      try {
+            const updatedUsers = await User.findByIdAndUpdate(
+                  _id,
+                  {
+                        address: req?.body?.address,
+                  }, {
+                  new: true,
+            });
+            res.json(updatedUsers);
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
 
 // get all user
 const getallUser = asyncHandler(async (req, res) => {
@@ -253,6 +316,198 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 
+const getWishlist = asyncHandler(async (req, res) => {
+
+      const { _id } = req.user;
+
+      try {
+            const findUser = await User.findById(_id).populate("wishlist");
+            // sử dụng populate("wishlist");  để hạn chế câu lênh truy vấn
+            // truy vấn theo Id của product, sau đó ghi đè vào trường wishlist thông tin detail product, trả về cho người dùng 
+            console.log("🚀 ~ getWishlist ~ findUser:", findUser)
+            res.json(findUser);
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
+const userCart = asyncHandler(async (req, res) => {
+      const { cart } = req.body;
+      const { _id } = req.user;
+      validateMongoDbId(_id);
+      try {
+            let products = [];
+            const user = await User.findById(_id);
+            // check if user already have product in cart?
+            const alreadyExistCart = await Cart.findOne({ orderBy: user._id });
+            if (alreadyExistCart) {
+                  alreadyExistCart.remove();
+            }
+            for (let i = 0; i < cart.length; i++) {
+                  let object = {};
+                  object.product = cart[i]._id;
+                  object.count = cart[i].count;
+                  object.color = cart[i].color;
+                  let getPrice = await Product.findById(cart[i]._id).select("price").exec();
+                  console.log("🚀 ~ userCart ~ getPrice:", getPrice)
+                  object.price = getPrice.price;
+                  products.push(object);
+            }
+            let cartTotal = 0;
+            for (let i = 0; i < products.length; i++) {
+                  cartTotal = cartTotal + products[i].price * products[i].count
+            }
+            console.log("🚀 ~ userCart ~ cartTotal:", cartTotal)
+            let newCart = await new Cart({
+                  products,
+                  cartTotal,
+                  orderBy: user?._id
+            }).save();
+            res.json(newCart)
+
+      } catch (error) {
+            throw new Error(error);
+      }
+
+})
+
+const getUserCart = asyncHandler(async (req, res) => {
+      const { _id } = req.user;
+
+      try {
+            const cart = await Cart.findOne({ orderBy: _id }).populate(
+                  "products.product"); // lay chi tiet cac truongf thuoc product, xem Postman de thay ket qua chi tiet
+            //"products.product", "title ");  // chi lay truongf title cho vao trong result 
+            res.json(cart)
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
+const emptyCart = asyncHandler(async (req, res) => {
+      const { _id } = req.user;
+
+      try {
+            const user = await User.findOne({ _id });
+            const cart = await Cart.findOneAndDelete({ orderBy: user._id });
+
+            res.json(cart)
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
+const applyCoupon = asyncHandler(async (req, res) => {
+      const { _id } = req.user;
+      const { coupon } = req.body;
+      validateMongoDbId(_id);
+      const validCoupon = await Coupon.findOne({ name: coupon });
+
+      if (validCoupon === null) {
+            throw new Error("Invalid Coupon");
+      }
+      try {
+            const user = await User.findOne({ _id });
+            const { products, cartTotal } = await Cart.findOne({ orderBy: user._id })
+                  .populate("products.product");
+
+            let totalAfterDiscount = (cartTotal - (cartTotal * validCoupon.discount) / 100).toFixed(2);
+            await Cart.findOneAndUpdate(
+                  { orderBy: user._id },
+                  { totalAfterDiscount },
+                  { new: true }
+            )
+            res.json(totalAfterDiscount)
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
+const createOrder = asyncHandler(async (req, res) => {
+      const { COD, couponApplied } = req.body;
+      const { _id } = req.user;
+      validateMongoDbId(_id);
+
+      try {
+            if (!COD) throw new Error("Create cash order failed");
+            const user = await User.findById(_id);
+            let userCart = await Cart.findOne({ orderBy: user._id });
+
+            let finalAmout = 0;
+            if (couponApplied && userCart.totalAfterDiscount) {
+                  finalAmout = userCart.totalAfterDiscount * 100;
+            } else {
+                  finalAmout = userCart.cartTotal * 100;
+            }
+
+            let newOrder = await new Order({
+                  products: userCart.products,
+                  paymentIntent: {
+                        id: uniqid(),
+                        method: "COD",
+                        amount: finalAmout,
+                        status: "Cash on Delivery",
+                        created: Date.now(),
+                        currency: "usd"
+                  },
+                  orderBy: user._id,
+                  orderStatus: "Cash on Delivery",
+            }).save()
+            let update = userCart.products.map((item) => {
+                  return {
+                        updateOne: {
+                              filter: { _id: item.product._id },
+                              update: { $inc: { quantity: -item.count, sold: +item.count } },
+
+                        }
+                  }
+            })
+            const updated = await Product.bulkWrite(update, {});
+            res.json({ message: "success" });
+
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
+const getOrders = asyncHandler(async (req, res) => {
+      const { _id } = req.user;
+      validateMongoDbId(_id);
+
+      try {
+            const userOrders = await Order.findOne({ orderBy: _id }).populate("products.product").exec();
+            res.json(userOrders);
+
+            res.json(cart)
+      } catch (error) {
+            throw new Error(error);
+      }
+})
+
+const updateOrderStatus = asyncHandler(async (req, res) => {
+      const { status } = req.body;
+      const { id } = req.params;
+      validateMongoDbId(id);
+      try {
+            const updateOrderStatus = await Order.findByIdAndUpdate(id,
+                  {
+                        orderStatus: status,
+                        paymentIntent: {
+                              status: status
+                        }
+                  },
+                  {
+                        new: true
+                  }
+            );
+            console.log("🚀 ~ updateOrderStatus ~ updateOrderStatus:", updateOrderStatus)
+            res.json(updateOrderStatus);
+      } catch (error) {
+            throw new Error(error);
+      }
+
+})
+
 module.exports = {
       createUser,
       loginUserCtrl, getallUser,
@@ -263,5 +518,17 @@ module.exports = {
       logout,
       updatePassword,
       forgotPasswordToken,
-      resetPassword
+      resetPassword,
+      loginAdmin,
+      getWishlist,
+      saveAddress,
+      userCart,
+      getUserCart,
+      emptyCart,
+      applyCoupon,
+      createOrder,
+      getOrders,
+      updateOrderStatus
 }
+
+//Todo : 7.30 +- 2
