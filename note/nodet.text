@@ -1,0 +1,12 @@
+npm i express mongoose bcrypt body-parser dotenv
+
+npm i nodemon --save-dev
+
+"start": "node index.js",
+    "server": "nodemon index.js"
+
+npm run server
+
+
+//Model 
+//!mdbgum 

@@ -1,8 +1,13 @@
 const express = require("express");
-const { createUser, 
-    loginUserCtrl, getallUser, 
-    getaUser, deleteaUser, updatedUser, 
-    blockUser, unblockUser, 
+const {
+    createUser, 
+    loginUserCtrl, 
+    getallUser, 
+    getaUser, 
+    deleteaUser, 
+    updatedUser, 
+    blockUser, 
+    unblockUser, 
     handleRefreshToken, 
     logout,
     updatePassword,
@@ -30,12 +35,13 @@ router.put("/reset-password/:token", resetPassword);
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
 router.post("/cart",authMiddleware,  userCart);
-router.post("/cart/applycoupon",authMiddleware, applyCoupon);
-router.post("/cart/cash-order",authMiddleware, createOrder);
-router.get("/all-users", getallUser);
+router.post("/cart/applyllUser");
 router.get("/get-orders",authMiddleware, getOrders);
 router.get("/refresh", handleRefreshToken);
 router.get("/logout", logout);
+// router.get("/logout", logout, authMiddleware, applyCoupon);
+router.post("/cart/cash-order",authMiddleware, createOrder);
+router.get("/all-users", getallUser);
 
 router.get("/wishlist", authMiddleware,getWishlist); // cai nay phai dung phia truoc get("/:id")
 router.get("/cart", authMiddleware,getUserCart);

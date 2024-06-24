@@ -38,7 +38,6 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
 
       if (findUser && await findUser.isPasswordMatched(password)) {
             const refreshToken = await generateRefreshToken(findUser?.id);
-            console.log("🚀 ~ loginUserCtrl ~ refreshToken:", refreshToken)
             const updateuser = await User.findByIdAndUpdate(findUser?.id, {
                   refreshToken: refreshToken
             }, { new: true });
@@ -72,6 +71,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
             const updateuser = await User.findByIdAndUpdate(findAdmin?.id, {
                   refreshToken: refreshToken
             }, { new: true });
+
             res.cookie("refreshToken", refreshToken, {
                   httpOnly: true,
                   maxAge: 72 * 60 * 60 * 1000, //Sau 72 giờ = 3 days, cookie sẽ tự động bị xóa khỏi trình duyệt của người dùng.
@@ -102,7 +102,7 @@ const logout = asyncHandler(async (req, res) => {
                   secure: true
             });
             return res.sendStatus(204);
-      }
+      }           
       //
       await User.findOneAndUpdate({ refreshToken }, {
             refreshToken: '',
@@ -115,6 +115,15 @@ const logout = asyncHandler(async (req, res) => {
 
 })
 
+// Chủ yếu dùng trong Trình duyệt, không cần phải đăng nhập lại
+// Còn hệ thống Winform thường phải login, logout thường xuyên, nên không cần phải lưu trữ Token
+
+// Người dùng đăng nhập thành công, hệ thống tạo accessToken và refreshToken.
+// accessTokenp được gửi cho người dùng để truy cập các tài nguyên trong hệ thống.
+// refreshToken được đặt trong Cokkie trình duyệt người dùng
+// refreshToken được lưu trữ an toàn trên máy chủ.
+// Khi accessToken  hết hạn, người dùng gửi refreshToken đến máy chủ.
+// Máy chủ xác minh refreshToken, nếu có trên máy chủ người dùng và tạo accessToken cho người dùng.
 
 //Handle refresh token
 const handleRefreshToken = asyncHandler(async (req, res) => {
@@ -190,7 +199,6 @@ const getallUser = asyncHandler(async (req, res) => {
 const getaUser = asyncHandler(async (req, res) => {
       const { id } = req.params;
       validateMongoDbId(id);
-
       try {
             const getaUser = await User.findById(id);
             res.json({
@@ -505,13 +513,14 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       } catch (error) {
             throw new Error(error);
       }
-
 })
 
 module.exports = {
       createUser,
-      loginUserCtrl, getallUser,
-      getaUser, deleteaUser,
+      loginUserCtrl, 
+      getallUser,
+      getaUser, 
+      deleteaUser,
       updatedUser,
       blockUser, unblockUser,
       handleRefreshToken,

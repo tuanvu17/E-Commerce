@@ -42,6 +42,11 @@ var userSchema = new mongoose.Schema({
             type:String,
       }, // 1 mamg cac Id refer den Address
       wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+      
+// Dùng để lưu trữ token an toàn người dùng, được lưu trong database
+// token, và accessToken không cần lưu trongg database
+// token, và accessToken được sinh ra trong quá trình login, và còn hạn
+ 
       refreshToken: {
             type: String,
       },
@@ -49,7 +54,7 @@ var userSchema = new mongoose.Schema({
       passwordResetToken: String,
       passwordResetExpries: Date
 }, {
-      timestamps: true
+      timestamps: true // timestamps để tự động tạo các trường createdAt và updatedAt khi tạo hoặc cập nhật dữ liệu.
 }
 );
 
@@ -57,7 +62,7 @@ var userSchema = new mongoose.Schema({
 //Tạo một chuỗi ký tự ngẫu nhiên (salt) với độ dài 10 ký tự bằng phương thức genSaltSync của thư viện bcrypt
 //Gọi hàm callback next để thông báo rằng việc xử lý trước khi lưu trữ đã hoàn thành và cho phép lưu trữ đối tượng người dùng tiếp tục
 userSchema.pre("save", async function (next) {
-      if (!this.isModified("password")) {
+      if (!this.isModified("password")) { // MK không bị thay đổi thì không phải băm nữa, hàm băm tốn nhiều tài nguyên thời gia
             next();
       }
       const salt = bcrypt.genSaltSync(10);
@@ -68,6 +73,7 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
       return await bcrypt.compare(enteredPassword, this.password);
 }
+
 // Todo 3:42 =>> Gemini? cach hoat dong cua userSchema.pre
 userSchema.methods.createPasswordResetToken = async function () {
       const resetToken = crypto.randomBytes(32).toString("hex"); //Tao moi chuoi dang Hex 32 bytes -> de dang truyen tai
